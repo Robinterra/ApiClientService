@@ -1,0 +1,15 @@
+<package>
+  <metadata>
+    <id>ApiService</id>
+    <version>1.0.4</version>
+    <description>Ein kleiner ApiClient zum ansprechen von Rest Apis.</description>
+    <authors>roda</authors>
+    <projectUrl>http://cloud.versalitic.int:3000/roda/ApiService</projectUrl>
+    <icon>images/icon.png</icon>
+    <readme>README.md</readme>
+  </metadata>
+  <files>
+    <file src="images/icon.png" target="images/" />
+    <file src="README.md" target="./" />
+  </files>
+</package>
