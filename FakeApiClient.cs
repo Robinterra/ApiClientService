@@ -67,11 +67,11 @@ namespace ApiService
 
         public async Task<TResponse?> GetAsync<TResponse>(params object[] header) where TResponse : new()
         {
-            if (this.DeleteDelegate is null) return default;
+            if (this.GetDelegate is null) return default;
 
             string fullUrl = $"{baseAdress}{apiPath}/{string.Join('/', header)}";
 
-            FakeApiResponse response = await this.DeleteDelegate(new (baseAdress, apiPath, fullUrl, header));
+            FakeApiResponse response = await this.GetDelegate(new (baseAdress, apiPath, fullUrl, header));
             if (response.FromBody is null) return default;
             if (response.FromBody is not TResponse tr) throw new Exception("response Body is not expectet TResponse");
 
@@ -80,11 +80,11 @@ namespace ApiService
 
         public async Task<TResponse?> PostAsync<TResponse, TRequest>(TRequest data, string route) where TResponse : new()
         {
-            if (this.DeleteDelegate is null) return default;
+            if (this.PostDelegate is null) return default;
 
             string fullUrl = $"{baseAdress}{apiPath}/{route}";
 
-            FakeApiResponse response = await this.DeleteDelegate(new (baseAdress, apiPath, fullUrl, body: data));
+            FakeApiResponse response = await this.PostDelegate(new (baseAdress, apiPath, fullUrl, body: data));
             if (response.FromBody is null) return default;
             if (response.FromBody is not TResponse tr) throw new Exception("response Body is not expectet TResponse");
 
@@ -93,11 +93,11 @@ namespace ApiService
 
         public async Task<TResponse?> PostAsync<TResponse>(string route) where TResponse : new()
         {
-            if (this.DeleteDelegate is null) return default;
+            if (this.PostDelegate is null) return default;
 
             string fullUrl = $"{baseAdress}{apiPath}/{route}";
 
-            FakeApiResponse response = await this.DeleteDelegate(new (baseAdress, apiPath, fullUrl));
+            FakeApiResponse response = await this.PostDelegate(new (baseAdress, apiPath, fullUrl));
             if (response.FromBody is null) return default;
             if (response.FromBody is not TResponse tr) throw new Exception("response Body is not expectet TResponse");
 
@@ -106,11 +106,11 @@ namespace ApiService
 
         public async Task<TResponse?> PutAsync<TResponse, TRequest>(TRequest data, string route) where TResponse : new()
         {
-            if (this.DeleteDelegate is null) return default;
+            if (this.PutDelegate is null) return default;
 
             string fullUrl = $"{baseAdress}{apiPath}/{route}";
 
-            FakeApiResponse response = await this.DeleteDelegate(new (baseAdress, apiPath, fullUrl, body: data));
+            FakeApiResponse response = await this.PutDelegate(new (baseAdress, apiPath, fullUrl, body: data));
             if (response.FromBody is null) return default;
             if (response.FromBody is not TResponse tr) throw new Exception("response Body is not expectet TResponse");
 

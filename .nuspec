@@ -1,15 +1,20 @@
 <package>
   <metadata>
-    <id>ApiService</id>
-    <version>1.0.5</version>
+    <id>ApiServiceMain</id>
+    <version>1.0.1</version>
     <description>Ein kleiner ApiClient zum ansprechen von Rest Apis.</description>
     <authors>roda</authors>
     <projectUrl>http://cloud.versalitic.int:3000/roda/ApiService</projectUrl>
     <icon>images/icon.png</icon>
     <readme>README.md</readme>
+    <dependencies>
+      <group targetFramework="net6.0">
+      </group>
+    </dependencies>
   </metadata>
   <files>
     <file src="images/icon.png" target="images/" />
     <file src="README.md" target="./" />
+    <file src="bin/Release/net6.0/ApiService.dll" target="lib/net6.0" />
   </files>
 </package>
