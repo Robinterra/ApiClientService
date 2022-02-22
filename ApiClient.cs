@@ -269,7 +269,7 @@ namespace ApiService
             return result;
         }
 
-        private TResponse? BuildApiResponse<TResponse>(bool? isSuccess = null, HttpStatusCode? statusCode = null, string? status = null) where TResponse : new()
+        private TResponse? BuildApiResponse<TResponse>(bool? isSuccess = null, HttpStatusCode? statusCode = null, string? status = null, Exception? exception = null) where TResponse : new()
         {
             TResponse result = new();
             if (result is not IApiResponse apiResponse) return default;
@@ -279,6 +279,8 @@ namespace ApiService
             if (status is not null) apiResponse.SetStatus(status.ToString());
 
             if (statusCode is not null) apiResponse.SetHttpCode((int)statusCode);
+
+            if (exception is not null) apiResponse.SetException(exception);
 
             return result;
         }
@@ -299,7 +301,7 @@ namespace ApiService
             }
             catch (Exception e)
             {
-                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e);
             }
 
             return await this.GetResult<TResponse>(httpResponse);
@@ -323,7 +325,7 @@ namespace ApiService
             }
             catch (Exception e)
             {
-                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e);
             }
 
             return await this.GetResult<TResponse>(httpResponse);
@@ -343,7 +345,7 @@ namespace ApiService
             }
             catch (Exception e)
             {
-                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e);
             }
 
             return await this.GetResult<TResponse>(httpResponse);
@@ -400,7 +402,7 @@ namespace ApiService
             }
             catch (Exception e)
             {
-                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e);
             }
 
             return await this.GetResult<TResponse>(httpResponse);
