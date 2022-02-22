@@ -18,6 +18,8 @@ namespace ApiService
         private string? version;
         private HttpClient client;
 
+        private string? apiKey;
+
         private event CheckZertifkat? checkCertEasy;
 
         private event HTTPStatuscode? httpCode;
@@ -128,6 +130,20 @@ namespace ApiService
             }
         }
 
+        public string? ApiKey
+        {
+            get
+            {
+                return this.apiKey;
+            }
+            set
+            {
+                this.apiKey = value;
+
+                this.client = this.BuildHttpClient();
+            }
+        }
+
         #endregion get/set
 
         #region ctor
@@ -220,19 +236,26 @@ namespace ApiService
 
             if (this.version != null) client.DefaultRequestHeaders.Add("X-Version", this.version);
 
+            if (this.apiKey != null) client.DefaultRequestHeaders.Add("X-api-key", this.apiKey);
+
             return client;
         }
 
         private string GetQuerryFromParams(params object[] header)
         {
-            string query = this.ApiPath;
+            string query = this.ApiPath is null ? string.Empty : this.ApiPath;
 
-            foreach (object elem in header)
-            {
-                query += $"/{elem.ToString()}";
-            }
+            return $"{query}/{string.Join('/', header)}";
+        }
 
-            return query;
+        private async Task<TResponse?> GetResult<TResponse>(HttpResponseMessage httpResponse) where TResponse : new()
+        {
+            if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
+
+            TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
+            if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
+
+            return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
         }
 
         private TResponse SetToResponse<TResponse>(TResponse result, bool isSuccess, HttpStatusCode statusCode)
@@ -264,25 +287,22 @@ namespace ApiService
 
         public async Task<TResponse?> PutAsync<TResponse, TRequest> (TRequest data, string route) where TResponse : new()
         {
+            string apiPath = $"{this.ApiPath}/{route}";
+
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
+
+            HttpResponseMessage httpResponse;
+
             try
             {
-                string apiPath = $"{this.ApiPath}/{route}";
-
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
-
-                HttpResponseMessage httpResponse = await this.client.PutAsJsonAsync<TRequest>(apiPath, data);
-
-                if (this.httpCode is not null) this.httpCode(httpResponse.StatusCode);
-
-                TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
-                if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
-
-                return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+                httpResponse = await this.client.PutAsJsonAsync<TRequest>(apiPath, data);
             }
             catch (Exception e)
             {
                 return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
             }
+
+            return await this.GetResult<TResponse>(httpResponse);
         }
 
         #endregion PutData
@@ -293,48 +313,40 @@ namespace ApiService
         {
             string apiPath = $"{this.ApiPath}/{route}";
 
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
+
+            HttpResponseMessage httpResponse;
+
             try
             {
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
-
-                HttpResponseMessage httpResponse = await this.client.PostAsJsonAsync<TRequest>(apiPath, data);
-
-                if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
-
-                TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
-                if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
-
-                return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+                httpResponse = await this.client.PostAsJsonAsync<TRequest>(apiPath, data);
             }
             catch (Exception e)
             {
                 return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
             }
+
+            return await this.GetResult<TResponse>(httpResponse);
         }
 
         public async Task<TResponse?> PostAsync<TResponse>(string route) where TResponse : new()
         {
             string apiPath = $"{this.ApiPath}/{route}";
 
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
+
+            HttpResponseMessage httpResponse;
+
             try
             {
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
-
-                HttpResponseMessage httpResponse = await this.client.PostAsync(apiPath, null);
-
-                if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
-
-                if (!httpResponse.IsSuccessStatusCode) return default;
-
-                TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
-                if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
-
-                return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+                httpResponse = await this.client.PostAsync(apiPath, null);
             }
             catch (Exception e)
             {
                 return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
             }
+
+            return await this.GetResult<TResponse>(httpResponse);
         }
 
         #endregion PostData
@@ -343,16 +355,9 @@ namespace ApiService
 
         public async IAsyncEnumerable<T?> GetAsyncEnumerable<T>(params object[] header)
         {
-            StringBuilder sb = new StringBuilder();
+            string query = this.GetQuerryFromParams(header);
 
-            sb.Append(this.ApiPath);
-
-            foreach (object elem in header)
-            {
-                sb.Append($"/{elem}");
-            }
-
-            Stream? stream = await this.GetStreamFromQueryAsync(sb.ToString());
+            Stream? stream = await this.GetStreamFromQueryAsync(query);
             if (stream == null) throw new Exception();
 
             IAsyncEnumerable<T?> enumarble = JsonSerializer.DeserializeAsyncEnumerable<T>(stream, new JsonSerializerOptions { PropertyNameCaseInsensitive = true, DefaultBufferSize = 128 });
@@ -378,37 +383,27 @@ namespace ApiService
 
         public Task<TResponse?> GetAsync<TResponse>(params object[] header) where TResponse : new()
         {
-            StringBuilder sb = new StringBuilder();
+            string query = this.GetQuerryFromParams(header);
 
-            sb.Append(this.ApiPath);
-
-            foreach (object elem in header)
-            {
-                sb.Append($"/{elem}");
-            }
-
-            return this.GetDataFromQueryAsync<TResponse>(sb.ToString());
+            return this.GetDataFromQueryAsync<TResponse>(query);
         }
 
         private async Task<TResponse?> GetDataFromQueryAsync<TResponse>(string query) where TResponse : new()
         {
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
+
+            HttpResponseMessage httpResponse;
+
             try
             {
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
-
-                HttpResponseMessage httpResponse = await this.client.GetAsync(query, HttpCompletionOption.ResponseHeadersRead);
-
-                if (this.httpCode is not null) this.httpCode(httpResponse.StatusCode);
-
-                TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
-                if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
-
-                return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+                httpResponse = await this.client.GetAsync(query, HttpCompletionOption.ResponseHeadersRead);
             }
             catch (Exception e)
             {
                 return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
             }
+
+            return await this.GetResult<TResponse>(httpResponse);
         }
 
         #endregion GetData
@@ -417,35 +412,27 @@ namespace ApiService
 
         public Task<TResponse?> DeleteAsync<TResponse>(params object[] header) where TResponse : new()
         {
-            string query = this.ApiPath;
-
-            foreach (object elem in header)
-            {
-                query += $"/{elem.ToString()}";
-            }
+            string query = this.GetQuerryFromParams(header);
 
             return this.DeleteFromQueryAsync<TResponse>(query);
         }
 
         private async Task<TResponse?> DeleteFromQueryAsync<TResponse>(string query) where TResponse : new()
         {
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
+
+            HttpResponseMessage httpResponse;
+
             try
             {
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default;
-
-                HttpResponseMessage httpResponse = await this.client.DeleteAsync(query);
-
-                if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
-
-                TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
-                if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
-
-                return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+                httpResponse = await this.client.DeleteAsync(query);
             }
             catch (Exception e)
             {
                 return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString());
             }
+
+            return await this.GetResult<TResponse>(httpResponse);
         }
 
         #endregion Delete
