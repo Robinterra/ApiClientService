@@ -25,10 +25,14 @@ namespace ApiService
 
         #region ctor
 
-        public FakeApiClient(string baseadress, string apiPath)
+        public FakeApiClient(string baseadress, string apiPath, ApiDelegate? get = null, ApiDelegate? post = null, ApiDelegate? put = null, ApiDelegate? delete = null)
         {
             this.baseAdress = baseadress;
             this.apiPath = apiPath;
+            this.GetDelegate = get;
+            this.DeleteDelegate = delete;
+            this.PostDelegate = post;
+            this.PutDelegate = put;
         }
 
         #endregion ctor
