@@ -252,7 +252,16 @@ namespace ApiService
         {
             if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
 
-            TResponse? result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
+            TResponse? result;
+            try
+            {
+                result = await httpResponse.Content.ReadFromJsonAsync<TResponse>();
+            }
+            catch (Exception e)
+            {
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: "error_deserializing", exception: e);
+            }
+
             if (result is null) return this.BuildApiResponse<TResponse>(false, httpResponse.StatusCode, httpResponse.StatusCode.ToString());
 
             return this.SetToResponse(result, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
@@ -301,7 +310,7 @@ namespace ApiService
             }
             catch (Exception e)
             {
-                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e);
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: "error_httpRequest", exception: e);
             }
 
             return await this.GetResult<TResponse>(httpResponse);

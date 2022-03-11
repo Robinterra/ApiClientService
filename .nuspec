@@ -1,7 +1,7 @@
 <package>
   <metadata>
     <id>ApiService</id>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
     <description>Ein kleiner ApiClient zum ansprechen von Rest/http Apis, welche mit json laufen.</description>
     <authors>roda</authors>
     <projectUrl>https://github.com/Robinterra/ApiClientService</projectUrl>
