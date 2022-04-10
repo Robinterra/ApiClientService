@@ -1,0 +1,30 @@
+name: Deploy
+
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 6.0.100
+    - name: Restore dependencies
+      run: dotnet restore ./ApiService.csproj
+    - name: Build
+      run: dotnet build -c Release ./ApiService.csproj
+    - name: Pack
+      run: dotnet pack -c Release -p:PackageVersion=1.1.${{ github.run_number }} ./ApiService.csproj
+    - name: Deploy
+      run: dotnet nuget push ./nupkg/ApiService.1.1.${{ github.run_number }}.nupkg -k ${NugetApiKey} -s https://api.nuget.org/v3/index.json
+      env:
+        NugetApiKey: ${{ secrets.NugetApiKey }}
