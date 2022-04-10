@@ -283,6 +283,11 @@ namespace ApiService
             TResponse result = new();
             if (result is not IApiResponse apiResponse) return default;
 
+            return (TResponse)this.BuildApiResponse(apiResponse, isSuccess, statusCode, status, exception);
+        }
+
+        private TResponse BuildApiResponse<TResponse>(TResponse apiResponse, bool? isSuccess = null, HttpStatusCode? statusCode = null, string? status = null, Exception? exception = null) where TResponse : IApiResponse
+        {
             if (isSuccess is not null) apiResponse.SetIsSuccess((bool) isSuccess);
 
             if (status is not null) apiResponse.SetStatus(status.ToString());
@@ -291,7 +296,7 @@ namespace ApiService
 
             if (exception is not null) apiResponse.SetException(exception);
 
-            return result;
+            return apiResponse;
         }
 
         #region PutData
@@ -363,6 +368,40 @@ namespace ApiService
         #endregion PostData
 
         #region GetData
+
+        public async Task<DownloadStreamResponse?> GetDownloadStreamAsync<DownloadStreamResponse>(params object[] header) where DownloadStreamResponse : IApiDownloadStreamResponse, new()
+        {
+            string query = this.GetQuerryFromParams(header);
+
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default(DownloadStreamResponse);
+
+            HttpResponseMessage httpResponse;
+
+            try
+            {
+                httpResponse = await this.client.GetAsync(query, HttpCompletionOption.ResponseHeadersRead);
+            }
+            catch (Exception e)
+            {
+                return this.BuildApiResponse<DownloadStreamResponse>(isSuccess: false, status: e.ToString(), exception: e);
+            }
+
+            IEnumerable<string>? values;
+
+            httpResponse.Content.Headers.TryGetValues("Content-Type", out values);
+            if (values == null) return this.BuildApiResponse<DownloadStreamResponse>(isSuccess: false, status: "content-type not in header");
+            //if (values.Any(t=>t.ToLower() == "application/json")) return await this.GetResult<DownloadStreamResponse>(httpResponse);
+
+            Stream stream = await httpResponse.Content.ReadAsStreamAsync();
+
+            DownloadStreamResponse response = new DownloadStreamResponse();
+            response.SetStream(stream);
+
+            string? contentType = values.FirstOrDefault();
+            if (contentType is not null) response.SetContentType(contentType);
+
+            return this.SetToResponse(response, httpResponse.IsSuccessStatusCode, httpResponse.StatusCode);
+        }
 
         public async IAsyncEnumerable<T?> GetAsyncEnumerable<T>(params object[] header)
         {
@@ -516,7 +555,6 @@ namespace ApiService
                 return default(B);
             }
         }*/
-
 
         #endregion methods
 
