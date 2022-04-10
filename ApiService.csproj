@@ -5,6 +5,15 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <PackageOutputPath>./nupkg</PackageOutputPath>
+    <PackageIcon>images/icon.png</PackageIcon>
+    <Description>Ein kleiner ApiClient zum ansprechen von Rest/http Apis, welche mit json laufen.</Description>
+    <Authors>roda</Authors>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <RepositoryUrl>https://github.com/Robinterra/ApiClientService</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="images/icon.png" Pack="true" PackagePath="images/"/>
+  </ItemGroup>
 
 </Project>
