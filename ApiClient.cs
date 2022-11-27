@@ -487,39 +487,36 @@ namespace ApiService
 
         #endregion Delete
 
-                /*public B? UploadFile<B>(string route, List<FileUploadRequest> files)
+        public async Task<TResponse> UploadFileAsync<TResponse>(List<FileUploadRequest> files, string route) where TResponse : IApiResponse, new()
         {
+            string query = $"{this.ApiPath}/{route}";
+
+            if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return new TResponse();
+
+            MultipartFormDataContent content = new MultipartFormDataContent();
+
+            foreach (FileUploadRequest file in files)
+            {
+                if (!file.File.Exists) continue;
+
+                StreamContent stream = new StreamContent(file.File.OpenRead());
+
+                content.Add(stream, file.Name, file.FileName);
+            }
+
+            HttpResponseMessage httpResponse;
             try
             {
-                string query = $"{this.ApiPath}/{route}";
-
-                if (this.beforeConnectToWebservice != null) if (!this.beforeConnectToWebservice(this)) return default(B);
-
-                MultipartFormDataContent content = new MultipartFormDataContent();
-
-                foreach (FileUploadRequest file in files)
-                {
-                    if (!file.File.Exists) continue;
-
-                    StreamContent stream = new StreamContent(file.File.OpenRead());
-
-                    content.Add(stream, file.Name, file.FileName);
-                }
-
-                HttpResponseMessage httpResponse = this.client.PostAsync(query, content).Result;
-
-                if (this.httpCode != null) this.httpCode(httpResponse.StatusCode);
-
-                if (!httpResponse.IsSuccessStatusCode) return default(B);
-
-                return httpResponse.Content.ReadFromJsonAsync<B>().Result;
+                httpResponse = await this.client.PostAsync(query, content);
             }
-            catch
+            catch (Exception e)
             {
-                return default(B);
+                return this.BuildApiResponse<TResponse>(isSuccess: false, status: e.ToString(), exception: e)!;
             }
-        }
 
+            return (await this.GetResult<TResponse>(httpResponse))!;
+        }
+/*
         public B? DownloadFile<T, B>(T data, string route) where B : IResponseFileDownload, new()
         {
             string query = $"{this.ApiPath}/{route}";

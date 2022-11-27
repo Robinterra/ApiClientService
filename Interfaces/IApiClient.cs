@@ -15,6 +15,8 @@ namespace ApiService
 
         Task<TResponse?> DeleteAsync<TResponse>(params object[] header) where TResponse : new();
 
+        Task<TResponse> UploadFileAsync<TResponse>(List<FileUploadRequest> files, string route) where TResponse : IApiResponse, new();
+
         #endregion methods
 
     }

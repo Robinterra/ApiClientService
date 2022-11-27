@@ -121,6 +121,19 @@ namespace ApiService
             return this.SetToResponse(tr, response.IsSuccessStatusCode, response.HttpCode);
         }
 
+        public async Task<TResponse> UploadFileAsync<TResponse>(List<FileUploadRequest> files, string route) where TResponse : IApiResponse, new()
+        {
+            if (this.PostDelegate is null) return new TResponse();
+
+            string fullUrl = $"{baseAdress}{apiPath}/{route}";
+
+            FakeApiResponse response = await this.PostDelegate(new (baseAdress, apiPath, fullUrl, body: files));
+            if (response.FromBody is null) return new TResponse();
+            if (response.FromBody is not TResponse tr) throw new Exception("response Body is not expectet TResponse");
+
+            return this.SetToResponse(tr, response.IsSuccessStatusCode, response.HttpCode);
+        }
+
         #endregion methods
 
     }
