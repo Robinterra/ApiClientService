@@ -6,7 +6,7 @@ namespace ApiService
 
         #region get/set
 
-        public FileInfo File
+        public Stream Stream
         {
             get;
         }
@@ -27,7 +27,14 @@ namespace ApiService
 
         public FileUploadRequest(FileInfo file, string name, string fileName)
         {
-            this.File = file;
+            this.Stream = file.OpenRead();
+            this.Name = name;
+            this.FileName = fileName;
+        }
+
+        public FileUploadRequest(Stream stream, string name, string fileName)
+        {
+            this.Stream = stream;
             this.Name = name;
             this.FileName = fileName;
         }

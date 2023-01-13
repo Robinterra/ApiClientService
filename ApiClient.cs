@@ -497,9 +497,7 @@ namespace ApiService
 
             foreach (FileUploadRequest file in files)
             {
-                if (!file.File.Exists) continue;
-
-                StreamContent stream = new StreamContent(file.File.OpenRead());
+                StreamContent stream = new StreamContent(file.Stream);
 
                 content.Add(stream, file.Name, file.FileName);
             }
